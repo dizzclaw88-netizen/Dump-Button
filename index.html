@@ -26,14 +26,26 @@
         <div><b>Status:</b> <span id="statusText">(loading)</span></div>
         <div><b>Mode:</b> <span id="modeText">-</span></div>
         <div><b>Delay:</b> <span id="delayText">-</span> seconds</div>
+        <div><b>FFmpeg:</b> <span id="ffmpegText">-</span></div>
+        <div><b>Seamless ready:</b> <span id="seamlessReadyText">-</span></div>
         <div style="font-size:12px; opacity:0.85; margin-top:6px;">
-            Note: delay>0 currently requires re-encoding (higher CPU). Seamless dump switching is a work-in-progress.
+            Seamless dump/resume requires FFmpeg with zmq/azmq filters. If unavailable, app falls back to restart-based switching (may glitch).
         </div>
     </div>
 
-    <button class="button" onclick="startLive()">Start Live Stream</button>
-    <button class="button" onclick="stopStream()">Stop All Streams</button>
-    <button class="button" onclick="dumpStream()">DUMP (play placeholder)</button>
+    <div style="margin: 10px 0;">
+        <button class="button" onclick="startLive()">Start Live</button>
+        <button class="button" onclick="stopStream()">Stop</button>
+    </div>
+
+    <div style="margin: 10px 0; padding: 12px; background:#552222;">
+        <div style="font-weight:700; margin-bottom:8px;">DUMP CONTROL</div>
+        <button class="button" style="background:#aa3333; font-weight:700;" onmousedown="holdDumpStart()" onmouseup="holdDumpEnd()" onmouseleave="holdDumpEnd()">HOLD TO DUMP</button>
+        <button class="button" style="background:#3355aa; font-weight:700;" onclick="resumeLive()">Resume Live</button>
+        <div style="font-size:12px; opacity:0.85; margin-top:8px;">
+            Hold-to-dump reduces accidental presses. Resume should be smooth (no reconnect) when seamless mode is enabled and supported.
+        </div>
+    </div>
     <script>
         /* note, it's normally expected to use a bundler to build this file, but I woke up to day and chose violence */
         /* Complete promise.rpc.protocol file */
@@ -190,10 +202,21 @@
                 document.getElementById('statusText').textContent = 'OK';
                 document.getElementById('modeText').textContent = status.mode;
                 document.getElementById('delayText').textContent = status.delaySeconds;
+
+                const ff = status.ffmpeg;
+                if (!ff) {
+                    document.getElementById('ffmpegText').textContent = '(not probed)';
+                    document.getElementById('seamlessReadyText').textContent = 'unknown';
+                } else {
+                    document.getElementById('ffmpegText').textContent = ff.ffmpegFound ? (ff.version || 'found') : 'NOT FOUND';
+                    document.getElementById('seamlessReadyText').textContent = ff.hasZmqFilters ? 'yes' : 'no';
+                }
             } catch (e) {
                 document.getElementById('statusText').textContent = 'ERROR';
                 document.getElementById('modeText').textContent = '-';
                 document.getElementById('delayText').textContent = '-';
+                document.getElementById('ffmpegText').textContent = '-';
+                document.getElementById('seamlessReadyText').textContent = '-';
             }
         }
 
@@ -209,7 +232,34 @@
             rpcConn.request('dumpStream').then(refreshStatus);
         }
 
+        // Hold-to-dump
+        let dumpHeld = false;
+        let dumpTimer = null;
+
+        function holdDumpStart() {
+            dumpHeld = true;
+            // Arm delay (ms) to avoid accidental clicks
+            dumpTimer = setTimeout(() => {
+                if (dumpHeld) {
+                    rpcConn.request('dumpOn').then(refreshStatus);
+                }
+            }, 700);
+        }
+
+        function holdDumpEnd() {
+            dumpHeld = false;
+            if (dumpTimer) {
+                clearTimeout(dumpTimer);
+                dumpTimer = null;
+            }
+        }
+
+        function resumeLive() {
+            rpcConn.request('resumeLive').then(refreshStatus);
+        }
+
         // Initial + periodic refresh
+        rpcConn.request('refreshProbe').then(refreshStatus).catch(refreshStatus);
         refreshStatus();
         setInterval(refreshStatus, 2000);
     </script>

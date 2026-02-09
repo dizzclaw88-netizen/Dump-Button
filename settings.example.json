@@ -2,6 +2,15 @@
     "NMSPORT": 8200,
     "APPPORT": 8300,
     "APPHOST": "localhost",
+
     "STREAMURI": "super-secret-stream-uri",
-    "DUMPVIDEO": "dorkbubble.mp4"
+    "LIVE_INPUT_URL": "rtmp://localhost/live",
+
+    "DUMPVIDEO": "dorkbubble.mp4",
+
+    "DELAY_SECONDS": 0,
+
+    "SEAMLESS_SWITCHING": false,
+    "ZMQ_VIDEO": "tcp://127.0.0.1:5555",
+    "ZMQ_AUDIO": "tcp://127.0.0.1:5556"
 }

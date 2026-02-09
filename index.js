@@ -15,6 +15,7 @@ const controller = new StreamController(getSettings);
 
 const streamActions = {
   async startLive() {
+    await controller.refreshProbe();
     return controller.startLive();
   },
   async stopStream() {
@@ -22,6 +23,15 @@ const streamActions = {
   },
   async dumpStream() {
     return controller.dumpStream();
+  },
+  async dumpOn() {
+    return controller.dumpOn();
+  },
+  async resumeLive() {
+    return controller.resumeLive();
+  },
+  async refreshProbe() {
+    return controller.refreshProbe();
   },
   async status() {
     return controller.status();
