@@ -1,6 +1,7 @@
 const { logger } = require('./logger');
 const { terminateFfmpegProcess, startFfmpegProcess } = require('./stream_utils');
 const { buildLiveRelayArgs, buildDumpArgs } = require('./ffmpeg_args');
+const { buildSeamlessRelayArgs } = require('./ffmpeg_seamless');
 
 /**
  * Minimal stateful controller around the single ffmpeg process.
@@ -32,11 +33,22 @@ class StreamController {
 
   async startLive() {
     const settings = this.getSettings();
-    const args = buildLiveRelayArgs(settings);
-    logger.info({ action: 'startLive', delaySeconds: Number(settings.DELAY_SECONDS || 0), args: [...args.slice(0, -1), 'STREAMURI'] });
+
+    const seamless = String(settings.SEAMLESS_SWITCHING || '').toLowerCase();
+    const useSeamless = seamless === '1' || seamless === 'true' || seamless === 'yes';
+
+    const args = useSeamless ? buildSeamlessRelayArgs(settings) : buildLiveRelayArgs(settings);
+
+    logger.info({
+      action: 'startLive',
+      mode: useSeamless ? 'SEAMLESS' : 'BASIC',
+      delaySeconds: Number(settings.DELAY_SECONDS || 0),
+      args: [...args.slice(0, -1), 'STREAMURI'],
+    });
+
     await terminateFfmpegProcess();
     await startFfmpegProcess(args);
-    this.mode = 'LIVE';
+    this.mode = useSeamless ? 'LIVE_SEAMLESS' : 'LIVE';
     this.lastActionAt = new Date().toISOString();
     return this.status();
   }
