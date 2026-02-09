@@ -4,7 +4,7 @@
   "description": "This application allows you to manage live streams, seamlessly switching between live content from OBS and a pre-recorded dump video. It's designed to output directly to YouTube but can be configured for other streaming platforms.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test",
     "start": "electron ."
   },
   "author": "",

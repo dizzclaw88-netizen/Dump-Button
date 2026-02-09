@@ -6,30 +6,26 @@ const { logger } = require('./logger');
 const { getSettings } = require('./settings');
 
 const { PromiseRPCProtocol } = require('promise.rpc');
-const { terminateFfmpegProcess, startFfmpegProcess } = require('./stream_utils');
 const { nms } = require('./rtmp_relay');
+const { StreamController } = require('./stream_controller');
 
 nms.run();
 
+const controller = new StreamController(getSettings);
+
 const streamActions = {
   async startLive() {
-    const liveArgs = ['-i', 'rtmp://localhost/live', '-acodec', 'copy', '-vcodec', 'copy', '-f', 'flv'];
-    logger.info({'action': 'startLive', args:[...liveArgs, 'STREAMURI']});
-    liveArgs.push(getSettings().STREAMURI);
-    await terminateFfmpegProcess();
-    await startFfmpegProcess(liveArgs);
+    return controller.startLive();
   },
   async stopStream() {
-    logger.info({'action': 'stopStream'});
-    await terminateFfmpegProcess();
+    return controller.stopStream();
   },
   async dumpStream() {
-    const dumpArgs = ['-stream_loop', '-1', '-re', '-i', getSettings().DUMPVIDEO, '-acodec', 'copy', '-vcodec', 'copy', '-f', 'flv'];
-    logger.info({'action': 'dumpStream', args:[...dumpArgs, 'STREAMURI']});
-    dumpArgs.push(getSettings().STREAMURI);
-    await terminateFfmpegProcess();
-    await startFfmpegProcess(dumpArgs);
-  }    
+    return controller.dumpStream();
+  },
+  async status() {
+    return controller.status();
+  }
 };
 
 

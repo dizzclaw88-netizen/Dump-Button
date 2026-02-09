@@ -21,10 +21,19 @@
 </head>
 <body>
     <h2>Streaming Control Panel</h2>
+
+    <div style="margin: 10px 0; padding: 10px; background:#444;">
+        <div><b>Status:</b> <span id="statusText">(loading)</span></div>
+        <div><b>Mode:</b> <span id="modeText">-</span></div>
+        <div><b>Delay:</b> <span id="delayText">-</span> seconds</div>
+        <div style="font-size:12px; opacity:0.85; margin-top:6px;">
+            Note: delay>0 currently requires re-encoding (higher CPU). Seamless dump switching is a work-in-progress.
+        </div>
+    </div>
+
     <button class="button" onclick="startLive()">Start Live Stream</button>
     <button class="button" onclick="stopStream()">Stop All Streams</button>
-    <button class="button" onclick="dumpStream()">Trigger Dump Video</button>
-    <button class="button" onclick="test()">Test</button>
+    <button class="button" onclick="dumpStream()">DUMP (play placeholder)</button>
     <script>
         /* note, it's normally expected to use a bundler to build this file, but I woke up to day and chose violence */
         /* Complete promise.rpc.protocol file */
@@ -175,17 +184,34 @@
             rpcConn.dispatch(arg);
         });
 
+        async function refreshStatus() {
+            try {
+                const status = await rpcConn.request('status');
+                document.getElementById('statusText').textContent = 'OK';
+                document.getElementById('modeText').textContent = status.mode;
+                document.getElementById('delayText').textContent = status.delaySeconds;
+            } catch (e) {
+                document.getElementById('statusText').textContent = 'ERROR';
+                document.getElementById('modeText').textContent = '-';
+                document.getElementById('delayText').textContent = '-';
+            }
+        }
+
         function startLive() {
-            rpcConn.request('startLive');
+            rpcConn.request('startLive').then(refreshStatus);
         }
 
         function stopStream() {
-            rpcConn.request('stopStream');
+            rpcConn.request('stopStream').then(refreshStatus);
         }
 
         function dumpStream() {
-            rpcConn.request('dumpStream');            
+            rpcConn.request('dumpStream').then(refreshStatus);
         }
+
+        // Initial + periodic refresh
+        refreshStatus();
+        setInterval(refreshStatus, 2000);
     </script>
 </body>
 </html>
